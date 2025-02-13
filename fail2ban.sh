@@ -1,287 +1,171 @@
 #!/bin/bash
 
-# ANSI color codes
+# Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
-YELLOW='\033[0;33m'
+YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 CYAN='\033[0;36m'
-NC='\033[0m' # No Color
+WHITE='\033[1;37m'
+NC='\033[0m'
 
-# Function to display the menu
+# Clear screen function
+clear_screen() {
+    clear
+    show_banner
+}
+
+# Check root
+check_root() {
+    if [[ $EUID -ne 0 ]]; then
+        echo -e "${RED}This script must be run as root${NC}"
+        echo -e "Please run with: ${YELLOW}sudo bash script.sh${NC}"
+        exit 1
+    fi
+}
+
+# Show banner
+show_banner() {
+    echo -e "${BLUE}════════════════════════════════════════${NC}"
+    echo -e "${WHITE}         System Management Tools        ${NC}"
+    echo -e "${BLUE}════════════════════════════════════════${NC}"
+    echo
+}
+
+# Function to show script descriptions
+show_description() {
+    case $1 in
+        1) echo -e "   ${CYAN}└─ UFW Firewall Manager${NC}" ;;
+        2) echo -e "   ${CYAN}└─ Hetzner Abuse Handler${NC}" ;;
+        3) echo -e "   ${CYAN}└─ Config VPS for Direct${NC}" ;;
+        4) echo -e "   ${CYAN}└─ Automated Reboot${NC}" ;;
+        5) echo -e "   ${CYAN}└─ HAProxy Load Balancer${NC}" ;;
+        6) echo -e "   ${CYAN}└─ Unbound DNS Resolver${NC}" ;;
+        7) echo -e "   ${CYAN}└─ Server Defender${NC}" ;;
+        8) echo -e "   ${CYAN}└─ AS-BBR Network Optimizer${NC}" ;;
+        9) echo -e "   ${CYAN}└─ Enable Root SSH Access${NC}" ;;
+        10) echo -e "   ${CYAN}└─ Fail2Ban Manager${NC}" ;;
+    esac
+}
+
+# Main menu display function
 show_menu() {
-    clear
-    echo -e "${BLUE}-----------------------------${NC}"
-    echo -e "${CYAN}     Manage Fail2Ban         ${NC}"
-    echo -e "${BLUE}-----------------------------${NC}"
-    echo -e "${YELLOW}1. Install Fail2Ban${NC}"
-    echo -e "${YELLOW}2. Remove Fail2Ban${NC}"
-    echo -e "${YELLOW}3. Advanced Fail2Ban Configuration${NC}"
-    echo -e "${YELLOW}4. Check Fail2Ban Status${NC}"
-    echo -e "${YELLOW}5. Restart Fail2Ban${NC}"
-    echo -e "${YELLOW}6. Stop Fail2Ban${NC}"
-    echo -e "${YELLOW}7. Exit${NC}"
-    echo -e "${BLUE}-----------------------------${NC}"
+    echo -e "${YELLOW}Available Tools:${NC}"
+    echo
+    echo -e "${GREEN}1)${NC} UFW Manager"
+    show_description 1
+    echo
+    echo -e "${GREEN}2)${NC} Hetzner Abuse"
+    show_description 2
+    echo
+    echo -e "${GREEN}3)${NC} Config VPS for Direct"
+    show_description 3
+    echo
+    echo -e "${GREEN}4)${NC} Automated Reboot"
+    show_description 4
+    echo
+    echo -e "${GREEN}5)${NC} HAProxy Setup"
+    show_description 5
+    echo
+    echo -e "${GREEN}6)${NC} Unbound DNS"
+    show_description 6
+    echo
+    echo -e "${GREEN}7)${NC} Server Defender"
+    show_description 7
+    echo
+    echo -e "${GREEN}8)${NC} AS-BBR Network Optimizer"
+    show_description 8
+    echo
+    echo -e "${GREEN}9)${NC} Enable Root SSH"
+    show_description 9
+    echo
+    echo -e "${GREEN}10)${NC} Fail2Ban Manager"
+    show_description 10
+    echo
+    echo -e "${RED}0)${NC} Exit"
+    echo
+    echo -e "${BLUE}────────────────────────────────────────${NC}"
+    echo -e "${YELLOW}Enter your choice [0-10]:${NC} \c"
 }
 
-# Function to install Fail2Ban
-install_fail2ban() {
-    clear
-    echo -e "${CYAN}Updating package list...${NC}"
-    sudo apt update
-    echo -e "${CYAN}Installing Fail2Ban...${NC}"
-    sudo apt install -y fail2ban
-    if [ $? -eq 0 ]; then
-        echo -e "${GREEN}Fail2Ban has been successfully installed!${NC}"
-        
-        # Create jail.local if it doesn't exist
-        if [ ! -f /etc/fail2ban/jail.local ]; then
-            echo -e "${CYAN}Creating jail.local from jail.conf...${NC}"
-            sudo cp /etc/fail2ban/jail.conf /etc/fail2ban/jail.local
-        fi
-        
-        # Disable unnecessary jails like selinux-ssh
-        echo -e "${CYAN}Disabling unnecessary jails (e.g., selinux-ssh)...${NC}"
-        sudo sed -i '/^\[selinux-ssh\]/,/^\[/ s/enabled = true/enabled = false/' /etc/fail2ban/jail.local
-        
-        # Validate configuration before starting
-        echo -e "${CYAN}Validating Fail2Ban configuration...${NC}"
-        if sudo fail2ban-client -d > /dev/null 2>&1; then
-            echo -e "${GREEN}Configuration is valid!${NC}"
-            
-            # Enable and start Fail2Ban service
-            echo -e "${CYAN}Enabling and starting Fail2Ban service...${NC}"
-            sudo systemctl enable fail2ban
-            sudo systemctl start fail2ban
-            
-            if [ $? -eq 0 ]; then
-                echo -e "${GREEN}Fail2Ban service has been started and enabled!${NC}"
-            else
-                echo -e "${RED}Failed to start Fail2Ban service! Checking logs for more details...${NC}"
-                echo -e "${CYAN}Displaying Fail2Ban logs:${NC}"
-                sudo journalctl -u fail2ban --no-pager | tail -n 20
-                echo -e "${YELLOW}Please review the logs above to troubleshoot the issue.${NC}"
-            fi
-        else
-            echo -e "${RED}Error: Invalid configuration detected. Please fix the errors before starting.${NC}"
-            echo -e "${CYAN}Displaying Fail2Ban logs:${NC}"
-            sudo journalctl -u fail2ban --no-pager | tail -n 20
-            echo -e "${YELLOW}Please review the logs above to troubleshoot the issue.${NC}"
-        fi
-    else
-        echo -e "${RED}Failed to install Fail2Ban! Please check your internet connection or package manager.${NC}"
-    fi
-    
-    read -p "Press any key to continue..." -n 1
-    clear
-}
-
-# Function to remove Fail2Ban
-remove_fail2ban() {
-    clear
-    echo -e "${CYAN}Removing Fail2Ban...${NC}"
-    sudo systemctl stop fail2ban
-    sudo apt remove --purge -y fail2ban
-    if [ $? -eq 0 ]; then
-        echo -e "${GREEN}Fail2Ban has been successfully removed!${NC}"
-    else
-        echo -e "${RED}Failed to remove Fail2Ban!${NC}"
-    fi
-    
-    read -p "Press any key to continue..." -n 1
-    clear
-}
-
-# Function for advanced configuration
-advanced_config() {
-    clear
-    echo -e "${CYAN}Advanced Fail2Ban Configuration:${NC}"
-    echo -e "${YELLOW}1. Enable SSH Protection${NC}"
-    echo -e "${YELLOW}2. Customize Ban Time${NC}"
-    echo -e "${YELLOW}3. Customize Retry Attempts${NC}"
-    echo -e "${YELLOW}4. Back to Main Menu${NC}"
-    read -p "Enter your choice: " config_choice
-
-    case $config_choice in
-        1)
-            echo -e "${CYAN}Enabling SSH protection...${NC}"
-            if [ ! -f /etc/fail2ban/jail.local ]; then
-                echo -e "${CYAN}Creating jail.local from jail.conf...${NC}"
-                sudo cp /etc/fail2ban/jail.conf /etc/fail2ban/jail.local
-            fi
-            sudo sed -i '/^\[sshd\]/,/^\[/ s/enabled = false/enabled = true/' /etc/fail2ban/jail.local
-            echo -e "${GREEN}SSH protection has been enabled!${NC}"
+# Functions to run scripts
+run_script() {
+    clear_screen
+    case $1 in
+        1) 
+            echo -e "${YELLOW}Running UFW Manager...${NC}"
+            sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/Salarvand-Education/Auto-ufw/main/ufw.sh)"
             ;;
         2)
-            read -p "Enter ban time (in seconds): " ban_time
-            if [[ $ban_time =~ ^[0-9]+$ ]]; then
-                sudo sed -i "s/^bantime = .*/bantime = $ban_time/" /etc/fail2ban/jail.local
-                echo -e "${GREEN}Ban time has been set to $ban_time seconds!${NC}"
-            else
-                echo -e "${RED}Invalid input! Please enter a valid number of seconds.${NC}"
-            fi
+            echo -e "${YELLOW}Running Hetzner Abuse Handler...${NC}"
+            sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/Salarvand-Education/Hetzner-Abuse/main/Abuse.sh)"
             ;;
         3)
-            read -p "Enter max retry attempts: " max_retry
-            if [[ $max_retry =~ ^[0-9]+$ ]]; then
-                sudo sed -i "s/^maxretry = .*/maxretry = $max_retry/" /etc/fail2ban/jail.local
-                echo -e "${GREEN}Max retry attempts have been set to $max_retry!${NC}"
-            else
-                echo -e "${RED}Invalid input! Please enter a valid number of retries.${NC}"
-            fi
+            echo -e "${YELLOW}Running VPS Configuration for Direct...${NC}"
+            sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/Salarvand-Education/Direct/main/Direct.sh)"
             ;;
         4)
-            return
+            echo -e "${YELLOW}Running Automated Reboot...${NC}"
+            sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/Salarvand-Education/Areboot/main/Install.sh)"
+            ;;
+        5)
+            echo -e "${YELLOW}Running HAProxy Setup...${NC}"
+            sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/Salarvand-Education/Haproxy/main/Haproxy.sh)"
+            ;;
+        6)
+            echo -e "${YELLOW}Running Unbound DNS Setup...${NC}"
+            sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/Salarvand-Education/Unbound/main/install.sh)"
+            ;;
+        7)
+            echo -e "${YELLOW}Running Server Defender...${NC}"
+            sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/Salarvand-Education/Server-Defender/main/install.sh)"
+            ;;
+        8)
+            echo -e "${YELLOW}Running AS-BBR Network Optimizer...${NC}"
+            sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/Salarvand-Education/AS-BBR/main/AS-BBR.sh)"
+            ;;
+        9)
+            echo -e "${YELLOW}Running Enable Root SSH...${NC}"
+            sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/Salarvand-Education/Enable-Root/main/Run.sh)"
+            ;;
+        10)
+            echo -e "${YELLOW}Running Fail2Ban Manager...${NC}"
+            sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/Salarvand-Education/fail2ban/main/fail2ban.sh)"
             ;;
         *)
-            echo -e "${RED}Invalid option! Please try again.${NC}"
+            echo -e "${RED}Invalid option. Please try again.${NC}"
+            sleep 2
             ;;
     esac
-    
-    read -p "Press any key to continue..." -n 1
-    clear
-}
-
-# Function to check Fail2Ban status
-check_status() {
-    clear
-    echo -e "${CYAN}Checking Fail2Ban status...${NC}"
-    
-    # Check if Fail2Ban service is running
-    if systemctl is-active --quiet fail2ban; then
-        echo -e "${GREEN}Fail2Ban is running!${NC}"
-        sudo fail2ban-client status
-    else
-        echo -e "${RED}Fail2Ban is not running! Attempting to diagnose the issue...${NC}"
-        
-        # Check if Fail2Ban is enabled
-        if ! systemctl is-enabled --quiet fail2ban; then
-            echo -e "${YELLOW}Fail2Ban is not enabled to start on boot. Enabling it now...${NC}"
-            sudo systemctl enable fail2ban
-        fi
-        
-        # Check for configuration errors
-        if [ -f /etc/fail2ban/jail.local ]; then
-            echo -e "${CYAN}Checking for configuration errors in jail.local...${NC}"
-            if ! sudo fail2ban-client -d > /dev/null 2>&1; then
-                echo -e "${RED}Error: Syntax error detected in /etc/fail2ban/jail.local.${NC}"
-                echo -e "${YELLOW}Please review the file for issues and correct them.${NC}"
-            fi
-        fi
-        
-        # Display logs for further troubleshooting
-        echo -e "${CYAN}Displaying Fail2Ban logs:${NC}"
-        sudo journalctl -u fail2ban --no-pager | tail -n 20
-        echo -e "${YELLOW}Please review the logs above to troubleshoot the issue.${NC}"
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}An error occurred!${NC}"
     fi
     
-    read -p "Press any key to continue..." -n 1
-    clear
-}
-
-# Function to restart Fail2Ban
-restart_fail2ban() {
-    clear
-    echo -e "${CYAN}Restarting Fail2Ban...${NC}"
-    
-    # Clean up Fail2Ban state files to prevent issues
-    echo -e "${CYAN}Cleaning up Fail2Ban state files...${NC}"
-    sudo rm -rf /var/lib/fail2ban/*
-    
-    # Validate configuration before restarting
-    echo -e "${CYAN}Validating Fail2Ban configuration...${NC}"
-    if sudo fail2ban-client -d > /dev/null 2>&1; then
-        echo -e "${GREEN}Configuration is valid!${NC}"
-        
-        # Restart Fail2Ban service
-        sudo systemctl restart fail2ban
-        
-        if [ $? -eq 0 ]; then
-            echo -e "${GREEN}Fail2Ban has been restarted!${NC}"
-        else
-            echo -e "${RED}Failed to restart Fail2Ban service! Checking logs for more details...${NC}"
-            echo -e "${CYAN}Displaying Fail2Ban logs:${NC}"
-            sudo journalctl -u fail2ban --no-pager | tail -n 20
-            echo -e "${YELLOW}Please review the logs above to troubleshoot the issue.${NC}"
-        fi
-    else
-        echo -e "${RED}Error: Invalid configuration detected. Please fix the errors before restarting.${NC}"
-        echo -e "${CYAN}Displaying Fail2Ban logs:${NC}"
-        sudo journalctl -u fail2ban --no-pager | tail -n 20
-        echo -e "${YELLOW}Please review the logs above to troubleshoot the issue.${NC}"
-    fi
-    
-    read -p "Press any key to continue..." -n 1
-    clear
-}
-
-# Function to stop Fail2Ban
-stop_fail2ban() {
-    clear
-    echo -e "${CYAN}Stopping Fail2Ban...${NC}"
-    if systemctl is-active --quiet fail2ban; then
-        sudo systemctl stop fail2ban
-        if [ $? -eq 0 ]; then
-            echo -e "${GREEN}Fail2Ban has been stopped!${NC}"
-        else
-            echo -e "${RED}Failed to stop Fail2Ban!${NC}"
-        fi
-    else
-        echo -e "${YELLOW}Fail2Ban is already stopped.${NC}"
-    fi
-    
-    read -p "Press any key to continue..." -n 1
-    clear
-}
-
-# Function to disable selinux-ssh jail
-disable_selinux_ssh_jail() {
-    clear
-    echo -e "${CYAN}Disabling selinux-ssh jail...${NC}"
-    if [ -f /etc/fail2ban/jail.local ]; then
-        sudo sed -i '/^\[selinux-ssh\]/,/^\[/ s/enabled = true/enabled = false/' /etc/fail2ban/jail.local
-        echo -e "${GREEN}selinux-ssh jail has been disabled!${NC}"
-    else
-        echo -e "${YELLOW}/etc/fail2ban/jail.local does not exist. Creating it from jail.conf...${NC}"
-        sudo cp /etc/fail2ban/jail.conf /etc/fail2ban/jail.local
-        sudo sed -i '/^\[selinux-ssh\]/,/^\[/ s/enabled = true/enabled = false/' /etc/fail2ban/jail.local
-        echo -e "${GREEN}selinux-ssh jail has been disabled!${NC}"
-    fi
-    
-    read -p "Press any key to continue..." -n 1
-    clear
+    echo
+    read -p "Press Enter to return to main menu..."
 }
 
 # Main loop
-while true; do
-    show_menu
-    read -p "Enter your choice: " choice
+main() {
+    check_root
+    while true; do
+        clear_screen
+        show_menu
+        read choice
+        case $choice in
+            [1-10]) run_script $choice ;;
+            0) 
+                clear
+                echo -e "${GREEN}Thank you for using System Management Tools!${NC}"
+                exit 0 
+                ;;
+            *)
+                echo -e "${RED}Invalid option. Please try again.${NC}"
+                sleep 2
+                ;;
+        esac
+    done
+}
 
-    case $choice in
-        1)
-            install_fail2ban
-            ;;
-        2)
-            remove_fail2ban
-            ;;
-        3)
-            advanced_config
-            ;;
-        4)
-            check_status
-            ;;
-        5)
-            restart_fail2ban
-            ;;
-        6)
-            stop_fail2ban
-            ;;
-        7)
-            echo -e "${CYAN}Exiting...${NC}"
-            break
-            ;;
-        *)
-            echo -e "${RED}Invalid option! Please try again.${NC}"
-            ;;
-    esac
-done
+# Start script
+main
