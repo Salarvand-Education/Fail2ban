@@ -62,12 +62,9 @@ sudo journalctl -u fail2ban --no-pager
 Contributions are welcome! If you have any improvements or bug fixes, feel free to open a pull request.
 
 ## Contact
-For any questions or support, please contact us at [support@example.com](mailto:support@example.com).
+For any questions or support, please contact us at [info@salarvand.org](mailto:info@salarvand.org).
 
 ---
-**Maintained by [Amirsam Salarvand]**  
+**Maintained by Amirsam Salarvand**  
 **GitHub Repository**: [https://github.com/Salarvand-Education/fail2ban](https://github.com/Salarvand-Education/fail2ban)
 ```
-
-
-این فایل `README.md` ساده‌تر و قابلیت‌های اصلی اسکریپت را به خوبی توصیف می‌کند.
