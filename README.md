@@ -67,4 +67,3 @@ For any questions or support, please contact us at [info@salarvand.org](mailto:i
 ---
 **Maintained by Amirsam Salarvand**  
 **GitHub Repository**: [https://github.com/Salarvand-Education/fail2ban](https://github.com/Salarvand-Education/fail2ban)
-```
